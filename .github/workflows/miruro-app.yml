@@ -132,7 +132,7 @@ jobs:
               // Pages on these sites (and their subdomains) open in the app. Everything else is
               // blocked (ads, pop-ups, redirects). Add a login provider here if its page gets blocked.
               private static final String[] ALLOWED_HOSTS = {
-                      "miruro.ru", "anilist.co", "myanimelist.net", "discord.com", "google.com"
+                      "miruro.ru", "anilist.co", "myanimelist.net", "discord.com", "google.com", "ultracloud.cc"
               };
               // -------------------------------------------------------------------------------------
 
