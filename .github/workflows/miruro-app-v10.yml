@@ -1,0 +1,2638 @@
+# Miruro Android app: one-file builder.
+# This single file creates the whole Android project, builds the APK, and publishes it
+# on the repository's Releases page (Releases -> latest -> MiruroApp.apk).
+# Edit START_URL inside MainActivity.java below to change the site.
+name: Build Miruro APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create the Android project
+        run: |
+          mkdir -p proj
+          cd proj
+          mkdir -p app
+          mkdir -p app/src/main
+          mkdir -p app/src/main/java/com/example/miruroapp
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/mipmap-anydpi-v26
+          mkdir -p app/src/main/res/values
+          cat > app/build.gradle <<'EOF_FILE'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'com.example.miruroapp'
+              compileSdk 34
+
+              defaultConfig {
+                  applicationId "com.oniksimsung.miruro"
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+
+              signingConfigs {
+                  debug {
+                      storeFile file('signing.jks')
+                      storePassword 'miruro123'
+                      keyAlias 'miruro'
+                      keyPassword 'miruro123'
+                  }
+              }
+
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          EOF_FILE
+          cat > app/signing.b64 <<'EOF_FILE'
+          MIIKJAIBAzCCCc4GCSqGSIb3DQEHAaCCCb8Eggm7MIIJtzCCBa4GCSqGSIb3DQEHAaCCBZ8EggWb
+          MIIFlzCCBZMGCyqGSIb3DQEMCgECoIIFQDCCBTwwZgYJKoZIhvcNAQUNMFkwOAYJKoZIhvcNAQUM
+          MCsEFM/uP415bcUdvTjIkjHn+7fEEfAZAgInEAIBIDAMBggqhkiG9w0CCQUAMB0GCWCGSAFlAwQB
+          KgQQqt8xlCLd6+Ot5ksqEHjAIgSCBND8wf+dXw98zy3njAMOon4ogCDHIF8g0WI0fyJ4LDVfA8hr
+          lmHJ0HjJIi8vgRQviY0DQk0vw4uYHNl7DwS6YFuVTZhGjmmdFhBN6Xnb3honyHk+vTaF+wYXFp+k
+          JbavpB/SRojJv1cMOYxQfmRjAUIS4CtvKWOHgaGZFX1pann3w9s2prLdMb2Q4iuyhGNaXIuCvu8V
+          mkmFn40dwkOZSgD1mg4pTK3IZnFngzS7czH2S05Q3nVJbk60U+UfUC/lPMZHhdYEvl5Y/FIM+VBI
+          Ws6y7mfLIEIR8bc6S7msqg0NLnMPKr6T1IYjEMpfVJgv0WPrGq+U1afoX+gTt106fu6fb6nMhFqV
+          V+1bsiSwFCuv2dkG9W//nHKH1Vugdgd/0mio98+AODqydWsfGbyCM1LGNLrfhXNQ24HOmp7X7cTt
+          APXPup9PXL2YiTFMskn8wBDQMJ8/H7tvuDLAXmDiwQ0/to4vJ5c+5BP544/+EUXlw6++uxQDTcUk
+          euiwe58ueh0NOo859ousfFbJOlO6q/yLVK71TOaJ026PMGCNeohhNnkfec6ss5rlbLrei9w9uDzl
+          9U4eFt9tQYo9IXqlVAMZUsNRCyUFBKjQIF1dagl/XleXQv3iSQkdwFKvAAve51BJgclY9oTiJBzv
+          +FNQWlqG8x+0Mob4fSdLEGrYvX73/FqoMO+yPtzTDZcOXrdYj9kV+50pdqxFXWX9sHftrVx7Q1nc
+          VTX4ip76WTZ70RyMzkLVtoi6BkYmIXev2CRqGbnTk6FwPUStAFO+r0QBVCUQaFzLh+JOSDrJsg8I
+          aquGBTwHxzJae16tXJ/qDJO9zW/2A225bZB389Qg5kRhWVnq0EdnHKpz6VGPJimTE/r5+dutFn8r
+          YjBjiVflazeSEqvA32+dbXQyFa3IB2cIqcniWzzbavFop+20FR7ao0xaWQSn6qYlzXz1QVUP+fPQ
+          58E5E8Dqz6U/thAyhqrTjS9NhHXLKK2Qshj5SA6EIsaNJ9jzQW+c+h/RWNN9aATnrzY8/uoz01Vm
+          ctC1i7Xo7xHHvCk6AGXbNfLmKln6+HhYjG0g8YuXEGAYpm3bO6yGswZOVEc6J8jLlsCsaQNLuRlw
+          4+ewkEDX1zYaCBlRdL0y9hM7Jp6yt62O0ruWSwk9wkdTDD3YMlwO10lN/I0gajuRnHkhhxCR19Wy
+          NIUojj97FaIYAJphIaluXGL2Lg0TWa6OKmXEz363QaYFggXrUT+m5LEja5Q2XRm/b3woHdzWBN1n
+          rvzb1d7MjvmeexVMirUHK2zSif4+JbhCKb9EkoR1gJ1k23DCuKJXZD2d8mhT2srYCsg6Kg3uBfMS
+          +wodaBcGVUpgxDwu+rQQwTUXIxnghWTqdBiQ1NeNtjyil2SFPRkUXj14s9mr5NEloX5qc5mxztTO
+          sMzx/eJbvDPGDcOJM6jGZ9wwHa05Q1JubapQY2F7A+psGGCi1Mqf0jBcymq+igm2qQy09xK3uT9t
+          a/gxVChwpgUKwL+cuxmc9FyZHnP8nNSlxkoE3B6/qCVJrUlIHskBcNZ6jAhQk81MF3CuWIgM6RNM
+          pK+7oJ2+77FOhE945u3qEMCSIgrKSMgbUmImmQWq+5kR8/IBJpvBlZFFP9rWnRy7qfOK1Wps3Sb0
+          VTFAMBsGCSqGSIb3DQEJFDEOHgwAbQBpAHIAdQByAG8wIQYJKoZIhvcNAQkVMRQEElRpbWUgMTc5
+          MjM1MDcwNTU1MDCCBAEGCSqGSIb3DQEHBqCCA/IwggPuAgEAMIID5wYJKoZIhvcNAQcBMGYGCSqG
+          SIb3DQEFDTBZMDgGCSqGSIb3DQEFDDArBBS+3mYeLvKdzkO4HPVhDSMSiKWaaAICJxACASAwDAYI
+          KoZIhvcNAgkFADAdBglghkgBZQMEASoEELlAxjAtn5rEC8Hio1o5HOSAggNwMxwZeymtchAI0BVO
+          jfE4OLn7EAP75OIZ2QuJknvZrqb4lbOLsm766/rVi/1uTEjNSUJ0/RVq4+o76qJ2wEwufBbusU/P
+          8s+RjODHDf1NhaaGR3TszuPd54yD/vTtwWDkBkmDim9qJbPvhjvtJuC5DG6vTsjckm7+UEMTzu3P
+          KcvtR7zafMvNlEylvq1xOr7KGwK4WpWc9NN7k5hxXZpbqkrTr3/TceEEwb/OgjUe8TyMzub7hhq2
+          b9bB06H1/arjypEPcxHJZPtpjBczBVQ92U4yNo5/3sHbz6V27K2YEbPAFAuyzXtCVYPGFzMnHM9d
+          Xwrgk0JWx3hPzdv0hAXksqN3Tb/xj13ltrnTqoZw1IFBWvIdw0afO1UbYo+rUGbqvHyMfIBmPX2t
+          g/TRDRy2RWtkTm83NjJxkNAPmAGQ9WIBqWRp2AX1imDC7rgfbq5qlZ/abRm5vnPqLT0x8pTZYa6E
+          5jyuwxhK1XJq0Pz0YzD+HzIQsaDG1bqiaNx4L+hUMrcAsTir9HV3ivprCyrb45NvsuPislBYDbU7
+          0l/k7Giq1fpYvpi+/dh32sGhtKgzTf5mjPCpP7fx3a4fWwMIe7KkEG2D5sgNyQ+dvZbWkZeODHCc
+          7n8Ispe6scgdqTr3x10dcVcCVOCnNfWpI564cTnq/5o5uYRwEmuv9Tg3QmrCZxJfRrBJMaH4d+dI
+          PiSfvU7mrDsLimI3NyJGuJO6dARI52aCubOrDkD0XF79yFmWLs8S4iiNn52MqsuFboLke3xd4kw2
+          6oWUmSkvAiVSD+bBGZ/37BEX6f74qeHAQ9usbUzeY9asaVRFfRhFWmJOzLayb9nWOJXyqzLjRDt7
+          qqr/QNocqG3akbmhWOZa/yzg8kxSW/Q6VJc5vqCJRAPT7EVdmokeJlZ89JqAm5Y3ZQwdB9M8umAh
+          z//7zlUT24Kjyz6YZWX/9YExx8kSKVHccE3tXJFGdze/FJW6qRRCl+6eaX7gHInjheRkPcAx7Tig
+          dGBxrsLjv6NpTGciRcqSWj8VrTxtEhSqnAb4jPfTtLvAg0QiTd5MJAWLEa0dqFVhADd/CrZFvtIe
+          jJTehU4Zajx8eeFWpFeB3lCoDn8Q5uynneaOinsNCOCDjS4lkZ2vMd0OzGvIh1t8eXov58WyL2SQ
+          LquCuKuz09msyenwmzBNMDEwDQYJYIZIAWUDBAIBBQAEIO6BOhXlCk52u1n7BqGe7tNM07ClL3wN
+          ulWWNCZbtoreBBSaLtFjDxcMWTtCm6dbJC/jF/mO7wICJxA=
+          EOF_FILE
+          cat > app/src/main/AndroidManifest.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission
+                  android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+                  android:maxSdkVersion="28" />
+
+              <application
+                  android:allowBackup="true"
+                  android:hardwareAccelerated="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:label="@string/app_name"
+                  android:theme="@style/AppTheme"
+                  android:usesCleartextTraffic="false">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|keyboard|navigation"
+                      android:windowSoftInputMode="adjustResize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+
+              </application>
+
+          </manifest>
+          EOF_FILE
+          cat > app/src/main/java/com/example/miruroapp/DownloadCenter.java <<'EOF_FILE'
+          package com.example.miruroapp;
+
+          import android.app.Activity;
+          import android.content.ContentValues;
+          import android.content.SharedPreferences;
+          import android.media.MediaScannerConnection;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.Environment;
+          import android.provider.DocumentsContract;
+          import android.provider.MediaStore;
+
+          import java.io.BufferedOutputStream;
+          import java.io.File;
+          import java.io.FileOutputStream;
+          import java.io.IOException;
+          import java.io.OutputStream;
+          import java.util.ArrayList;
+          import java.util.List;
+          import java.util.Map;
+          import java.util.concurrent.CopyOnWriteArrayList;
+          import java.util.concurrent.atomic.AtomicBoolean;
+          import java.util.concurrent.atomic.AtomicLong;
+
+          /**
+           * Keeps the list of downloads, runs them side by side and decides where the files are saved.
+           */
+          final class DownloadCenter {
+
+              static final int RUNNING = 0;
+              static final int DONE = 1;
+              static final int FAILED = 2;
+              static final int STOPPED = 3;
+
+              /** How many connections each download uses at the same time. */
+              private static final int THREADS = 8;
+              private static final String PREFS = "miruro_downloads";
+              private static final String KEY_FOLDER = "save_folder";
+
+              static final class Job {
+                  final int id;
+                  final String name;
+                  final String mime;
+                  volatile int state = RUNNING;
+                  volatile String message = "";
+                  volatile String where = "";
+                  volatile int done;
+                  volatile int total;
+                  final AtomicLong bytes = new AtomicLong();
+                  final AtomicBoolean cancel = new AtomicBoolean(false);
+
+                  Job(int id, String name, String mime) {
+                      this.id = id;
+                      this.name = name;
+                      this.mime = mime;
+                  }
+              }
+
+              private interface Work {
+                  void run(OutputStream out, Job job) throws IOException;
+              }
+
+              private static final class Output {
+                  OutputStream stream;
+                  Uri uri;
+                  File file;
+                  boolean mediaStore;
+                  String where;
+              }
+
+              private final Activity activity;
+              private final SharedPreferences prefs;
+              private final Runnable onChange;
+              private final CopyOnWriteArrayList<Job> jobs = new CopyOnWriteArrayList<>();
+              private final HlsDownloader.CookieProvider cookies;
+              private int nextId = 1;
+
+              DownloadCenter(Activity activity, HlsDownloader.CookieProvider cookies, Runnable onChange) {
+                  this.activity = activity;
+                  this.cookies = cookies;
+                  this.onChange = onChange;
+                  this.prefs = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE);
+              }
+
+              // ------------------------------------------------------------------ list
+
+              List<Job> jobs() {
+                  return new ArrayList<>(jobs);
+              }
+
+              int activeCount() {
+                  int n = 0;
+                  for (Job j : jobs) {
+                      if (j.state == RUNNING) {
+                          n++;
+                      }
+                  }
+                  return n;
+              }
+
+              void remove(Job job) {
+                  if (job.state != RUNNING) {
+                      jobs.remove(job);
+                  }
+              }
+
+              void cancelAll() {
+                  for (Job j : jobs) {
+                      j.cancel.set(true);
+                  }
+              }
+
+              // ------------------------------------------------------------------ save location
+
+              boolean hasCustomFolder() {
+                  return prefs.getString(KEY_FOLDER, null) != null;
+              }
+
+              void setFolder(Uri tree) {
+                  prefs.edit().putString(KEY_FOLDER, tree.toString()).apply();
+              }
+
+              void resetFolder() {
+                  prefs.edit().remove(KEY_FOLDER).apply();
+              }
+
+              String folderLabel() {
+                  String s = prefs.getString(KEY_FOLDER, null);
+                  if (s == null) {
+                      return "Downloads folder (default)";
+                  }
+                  try {
+                      String id = DocumentsContract.getTreeDocumentId(Uri.parse(s));
+                      return Uri.decode(id).replace(':', '/');
+                  } catch (Exception e) {
+                      return "The folder you chose";
+                  }
+              }
+
+              // ------------------------------------------------------------------ starting downloads
+
+              Job addStream(String name, String mime, final HlsDownloader.MediaPlaylist playlist,
+                            final Map<String, String> headers) {
+                  return start(name, mime, new Work() {
+                      @Override
+                      public void run(OutputStream out, Job job) throws IOException {
+                          HlsDownloader.download(playlist, out, headers, cookies, progressFor(job), job.cancel,
+                                  job.bytes, THREADS);
+                      }
+                  });
+              }
+
+              Job addFile(String name, String mime, final String url, final Map<String, String> headers) {
+                  return start(name, mime, new Work() {
+                      @Override
+                      public void run(OutputStream out, Job job) throws IOException {
+                          HlsDownloader.downloadFile(url, headers, cookies, out, progressFor(job), job.cancel,
+                                  job.bytes, THREADS);
+                      }
+                  });
+              }
+
+              private static HlsDownloader.Progress progressFor(final Job job) {
+                  return new HlsDownloader.Progress() {
+                      @Override
+                      public void onProgress(int done, int total) {
+                          job.done = done;
+                          job.total = total;
+                      }
+                  };
+              }
+
+              private Job start(String name, String mime, final Work work) {
+                  final Job job;
+                  synchronized (this) {
+                      job = new Job(nextId++, name, mime);
+                  }
+                  jobs.add(job);
+                  new Thread(new Runnable() {
+                      @Override
+                      public void run() {
+                          runJob(job, work);
+                      }
+                  }, "download-" + job.id).start();
+                  changed();
+                  return job;
+              }
+
+              private void runJob(Job job, Work work) {
+                  Output out = null;
+                  try {
+                      out = open(job);
+                      work.run(out.stream, job);
+                      finish(out);
+                      job.where = out.where;
+                      out = null;
+                      job.state = DONE;
+                  } catch (HlsDownloader.CancelledException e) {
+                      discard(out);
+                      job.state = STOPPED;
+                  } catch (Throwable t) {
+                      discard(out);
+                      String m = t.getMessage();
+                      job.message = (t instanceof OutOfMemoryError) ? "Not enough memory" : (m != null ? m : t.getClass().getSimpleName());
+                      job.state = FAILED;
+                  } finally {
+                      changed();
+                  }
+              }
+
+              private void changed() {
+                  activity.runOnUiThread(onChange);
+              }
+
+              // ------------------------------------------------------------------ files
+
+              private Output open(Job job) throws IOException {
+                  String saved = prefs.getString(KEY_FOLDER, null);
+                  if (saved != null) {
+                      try {
+                          Uri tree = Uri.parse(saved);
+                          Uri parent = DocumentsContract.buildDocumentUriUsingTree(tree,
+                                  DocumentsContract.getTreeDocumentId(tree));
+                          Uri doc = DocumentsContract.createDocument(activity.getContentResolver(), parent,
+                                  job.mime, job.name);
+                          if (doc != null) {
+                              OutputStream raw = activity.getContentResolver().openOutputStream(doc);
+                              if (raw != null) {
+                                  Output o = new Output();
+                                  o.uri = doc;
+                                  o.where = folderLabel();
+                                  o.stream = new BufferedOutputStream(raw, 256 * 1024);
+                                  return o;
+                              }
+                          }
+                      } catch (Exception ignored) {
+                          // The chosen folder is not usable any more; fall back to Downloads below.
+                      }
+                  }
+                  Output o = new Output();
+                  o.where = "Downloads";
+                  OutputStream raw;
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                      ContentValues values = new ContentValues();
+                      values.put(MediaStore.MediaColumns.DISPLAY_NAME, job.name);
+                      values.put(MediaStore.MediaColumns.MIME_TYPE, job.mime);
+                      values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                      values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                      Uri uri = activity.getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                      if (uri == null) {
+                          throw new IOException("Could not create the file");
+                      }
+                      o.uri = uri;
+                      o.mediaStore = true;
+                      raw = activity.getContentResolver().openOutputStream(uri);
+                      if (raw == null) {
+                          throw new IOException("Could not open the file");
+                      }
+                  } else {
+                      File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                      if (!dir.exists() && !dir.mkdirs()) {
+                          throw new IOException("Could not open the Downloads folder");
+                      }
+                      o.file = uniqueFile(dir, job.name);
+                      raw = new FileOutputStream(o.file);
+                  }
+                  o.stream = new BufferedOutputStream(raw, 256 * 1024);
+                  return o;
+              }
+
+              private static File uniqueFile(File dir, String name) {
+                  File f = new File(dir, name);
+                  if (!f.exists()) {
+                      return f;
+                  }
+                  int dot = name.lastIndexOf('.');
+                  String base = dot > 0 ? name.substring(0, dot) : name;
+                  String ext = dot > 0 ? name.substring(dot) : "";
+                  for (int i = 1; i < 1000; i++) {
+                      f = new File(dir, base + " (" + i + ")" + ext);
+                      if (!f.exists()) {
+                          return f;
+                      }
+                  }
+                  return f;
+              }
+
+              private void finish(Output o) throws IOException {
+                  o.stream.flush();
+                  o.stream.close();
+                  if (o.mediaStore) {
+                      ContentValues values = new ContentValues();
+                      values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                      activity.getContentResolver().update(o.uri, values, null, null);
+                  } else if (o.file != null) {
+                      MediaScannerConnection.scanFile(activity, new String[]{o.file.getAbsolutePath()}, null, null);
+                  }
+              }
+
+              private void discard(Output o) {
+                  if (o == null) {
+                      return;
+                  }
+                  try {
+                      o.stream.close();
+                  } catch (IOException ignored) {
+                      // Already closed or broken; the file is being removed anyway.
+                  }
+                  try {
+                      if (o.mediaStore) {
+                          activity.getContentResolver().delete(o.uri, null, null);
+                      } else if (o.uri != null) {
+                          DocumentsContract.deleteDocument(activity.getContentResolver(), o.uri);
+                      } else if (o.file != null) {
+                          //noinspection ResultOfMethodCallIgnored
+                          o.file.delete();
+                      }
+                  } catch (Exception ignored) {
+                      // Nothing more to clean up.
+                  }
+              }
+          }
+          EOF_FILE
+          cat > app/src/main/java/com/example/miruroapp/HlsDownloader.java <<'EOF_FILE'
+          package com.example.miruroapp;
+
+          import java.io.BufferedInputStream;
+          import java.io.ByteArrayOutputStream;
+          import java.io.IOException;
+          import java.io.InputStream;
+          import java.io.OutputStream;
+          import java.net.HttpURLConnection;
+          import java.net.URL;
+          import java.nio.charset.StandardCharsets;
+          import java.util.ArrayDeque;
+          import java.util.ArrayList;
+          import java.util.HashMap;
+          import java.util.List;
+          import java.util.Locale;
+          import java.util.Map;
+          import java.util.concurrent.Callable;
+          import java.util.concurrent.ConcurrentHashMap;
+          import java.util.concurrent.ExecutionException;
+          import java.util.concurrent.ExecutorService;
+          import java.util.concurrent.Executors;
+          import java.util.concurrent.Future;
+          import java.util.concurrent.atomic.AtomicBoolean;
+          import java.util.concurrent.atomic.AtomicLong;
+
+          import javax.crypto.Cipher;
+          import javax.crypto.spec.IvParameterSpec;
+          import javax.crypto.spec.SecretKeySpec;
+
+          /**
+           * Saves an HLS (.m3u8) stream by fetching every part and joining them in order.
+           * Uses no Android classes, so it can be tested on a normal computer.
+           */
+          final class HlsDownloader {
+
+              interface CookieProvider {
+                  String cookieFor(String url);
+              }
+
+              interface Progress {
+                  void onProgress(int done, int total);
+              }
+
+              static final class CancelledException extends IOException {
+                  CancelledException() {
+                      super("Cancelled");
+                  }
+              }
+
+              static final class Variant {
+                  final String url;
+                  final long bandwidth;
+                  final String resolution;
+
+                  Variant(String url, long bandwidth, String resolution) {
+                      this.url = url;
+                      this.bandwidth = bandwidth;
+                      this.resolution = resolution;
+                  }
+              }
+
+              static final class Key {
+                  final String url;
+                  final byte[] iv; // null means "use the part's sequence number"
+
+                  Key(String url, byte[] iv) {
+                      this.url = url;
+                      this.iv = iv;
+                  }
+              }
+
+              static final class Segment {
+                  final String url;
+                  final long sequence;
+                  final Key key; // null when the part is not encrypted
+                  final long rangeStart; // -1 when the whole file is used
+                  final long rangeLength;
+
+                  Segment(String url, long sequence, Key key, long rangeStart, long rangeLength) {
+                      this.url = url;
+                      this.sequence = sequence;
+                      this.key = key;
+                      this.rangeStart = rangeStart;
+                      this.rangeLength = rangeLength;
+                  }
+              }
+
+              static final class MediaPlaylist {
+                  final List<Segment> segments = new ArrayList<>();
+                  String initUrl; // set for fragmented MP4 streams
+                  long initRangeStart = -1;
+                  long initRangeLength = -1;
+                  boolean ended;
+                  double totalSeconds;
+              }
+
+              static final class Parsed {
+                  List<Variant> variants; // set for a master playlist (list of qualities)
+                  MediaPlaylist media; // set for a media playlist (list of video parts)
+              }
+
+              private static final String[] FORWARDED_HEADERS = {
+                      "User-Agent", "Referer", "Origin", "Accept-Language", "Authorization"
+              };
+              private static final int MAX_SEGMENT_BYTES = 150 * 1024 * 1024;
+              private static final int MAX_PLAYLIST_BYTES = 8 * 1024 * 1024;
+
+              private HlsDownloader() {
+              }
+
+              // ------------------------------------------------------------------ loading / parsing
+
+              static Parsed load(String url, Map<String, String> headers, CookieProvider cookies)
+                      throws IOException {
+                  HttpURLConnection c = connect(url, headers, cookies, -1, -1);
+                  // Relative links inside a playlist are relative to its final address after redirects.
+                  String finalUrl = c.getURL().toString();
+                  byte[] data;
+                  try (InputStream in = c.getInputStream()) {
+                      data = drain(in, MAX_PLAYLIST_BYTES);
+                  } finally {
+                      c.disconnect();
+                  }
+                  return parse(finalUrl, new String(data, StandardCharsets.UTF_8));
+              }
+
+              private static byte[] drain(InputStream in, int max) throws IOException {
+                  ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                  byte[] buf = new byte[16 * 1024];
+                  int n;
+                  while ((n = in.read(buf)) != -1) {
+                      bo.write(buf, 0, n);
+                      if (bo.size() > max) {
+                          throw new IOException("Response is too large");
+                      }
+                  }
+                  return bo.toByteArray();
+              }
+
+              static Parsed parse(String baseUrl, String text) throws IOException {
+                  if (text.startsWith("\uFEFF")) {
+                      text = text.substring(1);
+                  }
+                  if (!text.trim().startsWith("#EXTM3U")) {
+                      throw new IOException("This is not a video playlist");
+                  }
+                  String[] lines = text.replace("\r", "").split("\n");
+                  Parsed parsed = new Parsed();
+                  if (text.contains("#EXT-X-STREAM-INF")) {
+                      parsed.variants = parseMaster(baseUrl, lines);
+                  } else {
+                      parsed.media = parseMedia(baseUrl, lines);
+                  }
+                  return parsed;
+              }
+
+              private static List<Variant> parseMaster(String base, String[] lines) throws IOException {
+                  List<Variant> variants = new ArrayList<>();
+                  Map<String, String> pending = null;
+                  for (String raw : lines) {
+                      String line = raw.trim();
+                      if (line.isEmpty()) {
+                          continue;
+                      }
+                      if (line.startsWith("#EXT-X-STREAM-INF:")) {
+                          pending = parseAttributes(line.substring(line.indexOf(':') + 1));
+                      } else if (line.startsWith("#")) {
+                          continue;
+                      } else if (pending != null) {
+                          long bandwidth = parseLong(pending.get("BANDWIDTH"), -1);
+                          if (bandwidth < 0) {
+                              bandwidth = parseLong(pending.get("AVERAGE-BANDWIDTH"), -1);
+                          }
+                          variants.add(new Variant(resolve(base, line), bandwidth, pending.get("RESOLUTION")));
+                          pending = null;
+                      }
+                  }
+                  return variants;
+              }
+
+              private static MediaPlaylist parseMedia(String base, String[] lines) throws IOException {
+                  MediaPlaylist playlist = new MediaPlaylist();
+                  long sequence = 0;
+                  Key key = null;
+                  long pendingLength = -1;
+                  long pendingOffset = -1;
+                  String lastRangeUrl = null;
+                  long lastRangeEnd = 0;
+
+                  for (String raw : lines) {
+                      String line = raw.trim();
+                      if (line.isEmpty()) {
+                          continue;
+                      }
+                      if (line.startsWith("#EXT-X-MEDIA-SEQUENCE:")) {
+                          sequence = parseLong(line.substring(line.indexOf(':') + 1).trim(), 0);
+                      } else if (line.startsWith("#EXT-X-KEY:")) {
+                          Map<String, String> attrs = parseAttributes(line.substring(line.indexOf(':') + 1));
+                          String method = attrs.get("METHOD");
+                          String keyFormat = attrs.get("KEYFORMAT");
+                          if (method == null || "NONE".equalsIgnoreCase(method)) {
+                              key = null;
+                          } else if ("AES-128".equalsIgnoreCase(method)
+                                  && (keyFormat == null || "identity".equalsIgnoreCase(keyFormat))
+                                  && attrs.get("URI") != null) {
+                              key = new Key(resolve(base, attrs.get("URI")), parseIv(attrs.get("IV")));
+                          } else {
+                              throw new IOException("This stream uses " + method
+                                      + " protection, which cannot be saved");
+                          }
+                      } else if (line.startsWith("#EXT-X-MAP:")) {
+                          Map<String, String> attrs = parseAttributes(line.substring(line.indexOf(':') + 1));
+                          if (attrs.get("URI") != null) {
+                              playlist.initUrl = resolve(base, attrs.get("URI"));
+                              String range = attrs.get("BYTERANGE");
+                              if (range != null) {
+                                  long[] r = parseRange(range);
+                                  playlist.initRangeLength = r[0];
+                                  playlist.initRangeStart = r[1] >= 0 ? r[1] : 0;
+                              }
+                          }
+                      } else if (line.startsWith("#EXT-X-BYTERANGE:")) {
+                          long[] r = parseRange(line.substring(line.indexOf(':') + 1).trim());
+                          pendingLength = r[0];
+                          pendingOffset = r[1];
+                      } else if (line.startsWith("#EXTINF:")) {
+                          String d = line.substring(8);
+                          int comma = d.indexOf(',');
+                          if (comma >= 0) {
+                              d = d.substring(0, comma);
+                          }
+                          try {
+                              playlist.totalSeconds += Double.parseDouble(d.trim());
+                          } catch (NumberFormatException ignored) {
+                              // Skip a bad duration value.
+                          }
+                      } else if (line.startsWith("#EXT-X-ENDLIST")) {
+                          playlist.ended = true;
+                      } else if (line.startsWith("#")) {
+                          continue;
+                      } else {
+                          String segmentUrl = resolve(base, line);
+                          long rangeStart = -1;
+                          long rangeLength = -1;
+                          if (pendingLength >= 0) {
+                              rangeLength = pendingLength;
+                              if (pendingOffset >= 0) {
+                                  rangeStart = pendingOffset;
+                              } else {
+                                  rangeStart = segmentUrl.equals(lastRangeUrl) ? lastRangeEnd : 0;
+                              }
+                              lastRangeUrl = segmentUrl;
+                              lastRangeEnd = rangeStart + rangeLength;
+                              pendingLength = -1;
+                              pendingOffset = -1;
+                          }
+                          playlist.segments.add(new Segment(segmentUrl, sequence, key, rangeStart, rangeLength));
+                          sequence++;
+                      }
+                  }
+                  return playlist;
+              }
+
+              /** Parses "length" or "length@offset"; returns {length, offset or -1}. */
+              private static long[] parseRange(String s) {
+                  String value = s.trim();
+                  int at = value.indexOf('@');
+                  if (at < 0) {
+                      return new long[]{parseLong(value, -1), -1};
+                  }
+                  return new long[]{parseLong(value.substring(0, at), -1), parseLong(value.substring(at + 1), -1)};
+              }
+
+              static Map<String, String> parseAttributes(String s) {
+                  Map<String, String> map = new HashMap<>();
+                  int i = 0;
+                  int n = s.length();
+                  while (i < n) {
+                      int eq = s.indexOf('=', i);
+                      if (eq < 0) {
+                          break;
+                      }
+                      String name = s.substring(i, eq).trim().toUpperCase(Locale.ROOT);
+                      int j = eq + 1;
+                      String value;
+                      if (j < n && s.charAt(j) == '"') {
+                          int end = s.indexOf('"', j + 1);
+                          if (end < 0) {
+                              end = n;
+                          }
+                          value = s.substring(j + 1, end);
+                          i = end + 1;
+                      } else {
+                          int end = s.indexOf(',', j);
+                          if (end < 0) {
+                              end = n;
+                          }
+                          value = s.substring(j, end).trim();
+                          i = end;
+                      }
+                      if (i < n && s.charAt(i) == ',') {
+                          i++;
+                      }
+                      map.put(name, value);
+                  }
+                  return map;
+              }
+
+              private static long parseLong(String s, long fallback) {
+                  if (s == null) {
+                      return fallback;
+                  }
+                  try {
+                      return Long.parseLong(s.trim());
+                  } catch (NumberFormatException e) {
+                      return fallback;
+                  }
+              }
+
+              private static byte[] parseIv(String s) throws IOException {
+                  if (s == null) {
+                      return null;
+                  }
+                  String hex = (s.startsWith("0x") || s.startsWith("0X")) ? s.substring(2) : s;
+                  if (hex.length() % 2 == 1) {
+                      hex = "0" + hex;
+                  }
+                  byte[] raw = new byte[hex.length() / 2];
+                  try {
+                      for (int i = 0; i < raw.length; i++) {
+                          raw[i] = (byte) Integer.parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+                      }
+                  } catch (NumberFormatException e) {
+                      throw new IOException("Bad encryption settings in the playlist");
+                  }
+                  byte[] iv = new byte[16];
+                  int copy = Math.min(16, raw.length);
+                  System.arraycopy(raw, raw.length - copy, iv, 16 - copy, copy);
+                  return iv;
+              }
+
+              static String resolve(String base, String ref) throws IOException {
+                  return new URL(new URL(base), ref.trim()).toString();
+              }
+
+              // ------------------------------------------------------------------ downloading
+
+              /** Number of parts fetched at the same time. */
+              static final int DEFAULT_THREADS = 8;
+              private static final int FILE_CHUNK_BYTES = 2 * 1024 * 1024;
+
+              interface Fetcher {
+                  byte[] fetch(int index) throws IOException;
+              }
+
+              static void download(MediaPlaylist playlist, OutputStream out, Map<String, String> headers,
+                                   CookieProvider cookies, Progress progress, AtomicBoolean cancel)
+                      throws IOException {
+                  download(playlist, out, headers, cookies, progress, cancel, null, DEFAULT_THREADS);
+              }
+
+              /** Saves a playlist. Parts are fetched several at a time and written in order. */
+              static void download(final MediaPlaylist playlist, OutputStream out,
+                                   final Map<String, String> headers, final CookieProvider cookies,
+                                   Progress progress, final AtomicBoolean cancel, final AtomicLong bytes,
+                                   int threads) throws IOException {
+                  if (playlist.segments.isEmpty()) {
+                      throw new IOException("The playlist has no video parts");
+                  }
+                  final Map<String, byte[]> keyCache = new ConcurrentHashMap<>();
+                  if (playlist.initUrl != null) {
+                      byte[] init = fetchWithRetry(playlist.initUrl, playlist.initRangeStart,
+                              playlist.initRangeLength, null, 0, headers, cookies, keyCache, cancel, bytes);
+                      out.write(init);
+                  }
+                  runOrdered(playlist.segments.size(), new Fetcher() {
+                      @Override
+                      public byte[] fetch(int index) throws IOException {
+                          Segment s = playlist.segments.get(index);
+                          return fetchWithRetry(s.url, s.rangeStart, s.rangeLength, s.key, s.sequence,
+                                  headers, cookies, keyCache, cancel, bytes);
+                      }
+                  }, out, threads, progress, cancel);
+              }
+
+              /**
+               * Saves a plain file. When the server supports byte ranges the file is fetched in pieces
+               * over several connections at once, which uses much more of the available speed.
+               */
+              static void downloadFile(final String url, final Map<String, String> headers,
+                                       final CookieProvider cookies, OutputStream out, Progress progress,
+                                       final AtomicBoolean cancel, final AtomicLong bytes, int threads)
+                      throws IOException {
+                  long size = -1;
+                  boolean ranges = false;
+                  HttpURLConnection probe = connect(url, headers, cookies, 0, 1);
+                  try {
+                      int code = probe.getResponseCode();
+                      if (code == 206) {
+                          String cr = probe.getHeaderField("Content-Range");
+                          if (cr != null) {
+                              int slash = cr.lastIndexOf('/');
+                              if (slash >= 0) {
+                                  size = parseLong(cr.substring(slash + 1).trim(), -1);
+                              }
+                          }
+                          ranges = size > 0;
+                      } else {
+                          size = probe.getContentLengthLong();
+                      }
+                  } finally {
+                      probe.disconnect();
+                  }
+                  if (!ranges || size < 2L * FILE_CHUNK_BYTES) {
+                      copySingle(url, headers, cookies, out, progress, cancel, bytes, size);
+                      return;
+                  }
+                  final long total = size;
+                  int count = (int) ((total + FILE_CHUNK_BYTES - 1) / FILE_CHUNK_BYTES);
+                  runOrdered(count, new Fetcher() {
+                      @Override
+                      public byte[] fetch(int index) throws IOException {
+                          long start = (long) index * FILE_CHUNK_BYTES;
+                          long length = Math.min(FILE_CHUNK_BYTES, total - start);
+                          return fetchWithRetry(url, start, length, null, 0, headers, cookies, null, cancel, bytes);
+                      }
+                  }, out, threads, progress, cancel);
+              }
+
+              private static void copySingle(String url, Map<String, String> headers, CookieProvider cookies,
+                                             OutputStream out, Progress progress, AtomicBoolean cancel,
+                                             AtomicLong bytes, long size) throws IOException {
+                  HttpURLConnection c = connect(url, headers, cookies, -1, -1);
+                  try (InputStream in = new BufferedInputStream(c.getInputStream())) {
+                      byte[] buf = new byte[64 * 1024];
+                      long read = 0;
+                      int n;
+                      while ((n = in.read(buf)) >= 0) {
+                          checkCancel(cancel);
+                          out.write(buf, 0, n);
+                          read += n;
+                          if (bytes != null) {
+                              bytes.addAndGet(n);
+                          }
+                          if (progress != null && size > 0) {
+                              progress.onProgress((int) Math.min(Integer.MAX_VALUE, read / 1024),
+                                      (int) Math.min(Integer.MAX_VALUE, size / 1024));
+                          }
+                      }
+                  } finally {
+                      c.disconnect();
+                  }
+              }
+
+              /** Fetches parts [0, count) with several workers, writing results strictly in order. */
+              static void runOrdered(int count, final Fetcher fetcher, OutputStream out, int threads,
+                                     Progress progress, AtomicBoolean cancel) throws IOException {
+                  int workers = Math.max(1, Math.min(threads, count));
+                  ExecutorService pool = Executors.newFixedThreadPool(workers);
+                  try {
+                      int window = workers * 2;
+                      ArrayDeque<Future<byte[]>> queue = new ArrayDeque<>();
+                      int next = 0;
+                      for (int written = 0; written < count; written++) {
+                          checkCancel(cancel);
+                          while (next < count && queue.size() < window) {
+                              final int index = next++;
+                              queue.add(pool.submit(new Callable<byte[]>() {
+                                  @Override
+                                  public byte[] call() throws IOException {
+                                      return fetcher.fetch(index);
+                                  }
+                              }));
+                          }
+                          byte[] data;
+                          try {
+                              data = queue.poll().get();
+                          } catch (InterruptedException e) {
+                              Thread.currentThread().interrupt();
+                              throw new CancelledException();
+                          } catch (ExecutionException e) {
+                              Throwable cause = e.getCause();
+                              if (cause instanceof IOException) {
+                                  throw (IOException) cause;
+                              }
+                              throw new IOException(String.valueOf(cause));
+                          }
+                          out.write(data);
+                          if (progress != null) {
+                              progress.onProgress(written + 1, count);
+                          }
+                      }
+                  } finally {
+                      pool.shutdownNow();
+                  }
+              }
+
+              private static void checkCancel(AtomicBoolean cancel) throws CancelledException {
+                  if (cancel != null && cancel.get()) {
+                      throw new CancelledException();
+                  }
+              }
+
+              private static byte[] fetchWithRetry(String url, long rangeStart, long rangeLength, Key key,
+                                                   long sequence, Map<String, String> headers,
+                                                   CookieProvider cookies, Map<String, byte[]> keyCache,
+                                                   AtomicBoolean cancel, AtomicLong bytes) throws IOException {
+                  IOException last = null;
+                  for (int attempt = 0; attempt < 3; attempt++) {
+                      checkCancel(cancel);
+                      try {
+                          return fetchOnce(url, rangeStart, rangeLength, key, sequence, headers, cookies,
+                                  keyCache, cancel, bytes);
+                      } catch (CancelledException e) {
+                          throw e;
+                      } catch (IOException e) {
+                          last = e;
+                          try {
+                              Thread.sleep(1000L * (attempt + 1));
+                          } catch (InterruptedException ie) {
+                              Thread.currentThread().interrupt();
+                              throw new CancelledException();
+                          }
+                      }
+                  }
+                  throw last;
+              }
+
+              private static byte[] fetchOnce(String url, long rangeStart, long rangeLength, Key key,
+                                              long sequence, Map<String, String> headers,
+                                              CookieProvider cookies, Map<String, byte[]> keyCache,
+                                              AtomicBoolean cancel, AtomicLong bytes)
+                      throws IOException {
+                  HttpURLConnection c = connect(url, headers, cookies, rangeStart, rangeLength);
+                  byte[] raw;
+                  long counted = 0;
+                  try {
+                      int code = c.getResponseCode();
+                      InputStream in = new BufferedInputStream(c.getInputStream());
+                      long limit = -1;
+                      if (rangeLength >= 0) {
+                          if (code == 200) {
+                              skipFully(in, rangeStart); // the server ignored the Range request
+                          }
+                          limit = rangeLength;
+                      }
+                      ByteArrayOutputStream bo = new ByteArrayOutputStream(limit > 0 && limit < MAX_SEGMENT_BYTES
+                              ? (int) limit : 256 * 1024);
+                      byte[] buf = new byte[64 * 1024];
+                      long remaining = limit;
+                      while (limit < 0 || remaining > 0) {
+                          checkCancel(cancel);
+                          int want = limit < 0 ? buf.length : (int) Math.min(buf.length, remaining);
+                          int n = in.read(buf, 0, want);
+                          if (n < 0) {
+                              break;
+                          }
+                          bo.write(buf, 0, n);
+                          if (bytes != null) {
+                              bytes.addAndGet(n);
+                              counted += n;
+                          }
+                          if (limit >= 0) {
+                              remaining -= n;
+                          }
+                          if (bo.size() > MAX_SEGMENT_BYTES) {
+                              throw new IOException("A video part is too large");
+                          }
+                      }
+                      if (limit >= 0 && remaining > 0) {
+                          throw new IOException("A video part ended too early");
+                      }
+                      raw = bo.toByteArray();
+                  } catch (IOException e) {
+                      if (bytes != null) {
+                          bytes.addAndGet(-counted); // this attempt will be repeated
+                      }
+                      throw e;
+                  } finally {
+                      c.disconnect();
+                  }
+                  if (key == null) {
+                      return raw;
+                  }
+                  byte[] keyBytes = keyCache.get(key.url);
+                  if (keyBytes == null) {
+                      keyBytes = readAll(key.url, headers, cookies, 1024);
+                      if (keyBytes.length != 16) {
+                          throw new IOException("Unexpected encryption key size");
+                      }
+                      keyCache.put(key.url, keyBytes);
+                  }
+                  try {
+                      Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                      cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(keyBytes, "AES"),
+                              new IvParameterSpec(ivFor(key, sequence)));
+                      return cipher.doFinal(raw);
+                  } catch (Exception e) {
+                      throw new IOException("Could not decrypt a video part");
+                  }
+              }
+
+              private static byte[] ivFor(Key key, long sequence) {
+                  if (key.iv != null) {
+                      return key.iv;
+                  }
+                  byte[] iv = new byte[16];
+                  for (int i = 0; i < 8; i++) {
+                      iv[15 - i] = (byte) (sequence >>> (8 * i));
+                  }
+                  return iv;
+              }
+
+              private static void skipFully(InputStream in, long count) throws IOException {
+                  long left = count;
+                  byte[] tmp = new byte[16 * 1024];
+                  while (left > 0) {
+                      long skipped = in.skip(left);
+                      if (skipped <= 0) {
+                          int n = in.read(tmp, 0, (int) Math.min(tmp.length, left));
+                          if (n < 0) {
+                              throw new IOException("Unexpected end of data");
+                          }
+                          skipped = n;
+                      }
+                      left -= skipped;
+                  }
+              }
+
+              // ------------------------------------------------------------------ http
+
+              private static byte[] readAll(String url, Map<String, String> headers, CookieProvider cookies,
+                                            int max) throws IOException {
+                  HttpURLConnection c = connect(url, headers, cookies, -1, -1);
+                  try (InputStream in = c.getInputStream()) {
+                      return drain(in, max);
+                  } finally {
+                      c.disconnect();
+                  }
+              }
+
+              private static HttpURLConnection connect(String url, Map<String, String> headers,
+                                                       CookieProvider cookies, long rangeStart,
+                                                       long rangeLength) throws IOException {
+                  String current = url;
+                  for (int hop = 0; hop < 6; hop++) {
+                      HttpURLConnection c = (HttpURLConnection) new URL(current).openConnection();
+                      c.setInstanceFollowRedirects(false);
+                      c.setConnectTimeout(15000);
+                      c.setReadTimeout(30000);
+                      if (headers != null) {
+                          for (String name : FORWARDED_HEADERS) {
+                              String value = headerIgnoreCase(headers, name);
+                              if (value != null) {
+                                  c.setRequestProperty(name, value);
+                              }
+                          }
+                      }
+                      if (cookies != null) {
+                          String cookie = cookies.cookieFor(current);
+                          if (cookie != null && !cookie.isEmpty()) {
+                              c.setRequestProperty("Cookie", cookie);
+                          }
+                      }
+                      if (rangeStart >= 0 && rangeLength >= 0) {
+                          c.setRequestProperty("Range", "bytes=" + rangeStart + "-" + (rangeStart + rangeLength - 1));
+                      }
+                      c.setRequestProperty("Accept-Encoding", "identity");
+                      int code = c.getResponseCode();
+                      if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
+                          String location = c.getHeaderField("Location");
+                          c.disconnect();
+                          if (location == null) {
+                              throw new IOException("Redirect without a target");
+                          }
+                          current = resolve(current, location);
+                          continue;
+                      }
+                      if (code == 200 || code == 206) {
+                          return c;
+                      }
+                      c.disconnect();
+                      throw new IOException("The server answered " + code);
+                  }
+                  throw new IOException("Too many redirects");
+              }
+
+              private static String headerIgnoreCase(Map<String, String> headers, String name) {
+                  for (Map.Entry<String, String> e : headers.entrySet()) {
+                      if (e.getKey() != null && e.getKey().equalsIgnoreCase(name)) {
+                          return e.getValue();
+                      }
+                  }
+                  return null;
+              }
+          }
+          EOF_FILE
+          cat > app/src/main/java/com/example/miruroapp/MainActivity.java <<'EOF_FILE'
+          package com.example.miruroapp;
+
+          import android.Manifest;
+          import android.annotation.SuppressLint;
+          import android.app.Activity;
+          import android.app.AlertDialog;
+          import android.content.ActivityNotFoundException;
+          import android.content.ContentValues;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.pm.ActivityInfo;
+          import android.content.pm.PackageManager;
+          import android.graphics.Bitmap;
+          import android.graphics.drawable.GradientDrawable;
+          import android.media.MediaScannerConnection;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.os.Environment;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.os.Message;
+          import android.os.SystemClock;
+          import android.text.TextUtils;
+          import android.provider.MediaStore;
+          import android.view.Gravity;
+          import android.view.View;
+          import android.view.ViewGroup;
+          import android.view.WindowManager;
+          import android.webkit.CookieManager;
+          import android.webkit.URLUtil;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebResourceError;
+          import android.webkit.WebResourceRequest;
+          import android.webkit.WebResourceResponse;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import android.widget.FrameLayout;
+          import android.widget.LinearLayout;
+          import android.widget.ScrollView;
+          import android.widget.ProgressBar;
+          import android.widget.TextView;
+          import android.widget.Toast;
+
+          import java.io.BufferedOutputStream;
+          import java.io.File;
+          import java.io.FileOutputStream;
+          import java.io.IOException;
+          import java.io.OutputStream;
+          import java.util.ArrayList;
+          import java.util.Collections;
+          import java.util.HashMap;
+          import java.util.Iterator;
+          import java.util.List;
+          import java.util.Locale;
+          import java.util.Map;
+          import java.util.regex.Matcher;
+          import java.util.regex.Pattern;
+
+          import org.json.JSONObject;
+          import org.json.JSONTokener;
+          import java.util.concurrent.atomic.AtomicBoolean;
+
+          public class MainActivity extends Activity {
+
+              // ---- Edit these lines to change the site and which sites may open inside the app ----
+              private static final String START_URL = "https://www.miruro.ru/";
+              // Pages on these sites (and their subdomains) open in the app. Everything else is
+              // blocked (ads, pop-ups, redirects). Add a login provider here if its page gets blocked.
+              private static final String[] ALLOWED_HOSTS = {
+                      "miruro.ru", "anilist.co", "myanimelist.net", "discord.com", "google.com", "ultracloud.cc"
+              };
+              // -------------------------------------------------------------------------------------
+
+              private static final int REQ_STORAGE = 1001;
+              private static final int REQ_FOLDER = 1003;
+
+              private static final String[] DOWNLOAD_EXTENSIONS = {
+                      ".mp4", ".mkv", ".webm", ".avi", ".mov", ".m4v", ".mp3", ".zip", ".rar", ".7z", ".srt", ".ass", ".vtt"
+              };
+
+              private static final String ERROR_HTML =
+                      "<html><head><meta name='viewport' content='width=device-width, initial-scale=1'></head>"
+                              + "<body style='background:#0f1115;color:#e6e6e6;font-family:sans-serif;"
+                              + "text-align:center;padding-top:30vh'>"
+                              + "<h2>Can't reach the site</h2><p>Check your internet connection.</p>"
+                              + "<a href='" + START_URL + "' style='color:#a78bfa;font-size:1.2em'>Try again</a>"
+                              + "</body></html>";
+
+              /** A video address the page asked for (a stream playlist or a plain video file). */
+              private static final class Media {
+                  final String url;
+                  final boolean stream;
+                  final Map<String, String> headers;
+                  String baseName = "video";
+
+                  Media(String url, boolean stream, Map<String, String> headers) {
+                      this.url = url;
+                      this.stream = stream;
+                      this.headers = headers;
+                  }
+              }
+
+              private static final class RowViews {
+                  LinearLayout box;
+                  TextView title;
+                  ProgressBar bar;
+                  TextView info;
+                  TextView action;
+                  long lastBytes;
+                  long lastTime;
+                  double speed;
+              }
+
+              private FrameLayout root;
+              private WebView webView;
+              private ProgressBar progressBar;
+              private LinearLayout buttonBar;
+              private TextView downloadButton;
+              private TextView listButton;
+              private LinearLayout panel;
+              private LinearLayout listBox;
+              private TextView folderLabel;
+              private TextView emptyLabel;
+              private View customView;
+              private WebChromeClient.CustomViewCallback customViewCallback;
+
+              private final List<Media> detected = new ArrayList<>();
+              private final HlsDownloader.CookieProvider cookieProvider =
+                      url -> CookieManager.getInstance().getCookie(url);
+              private DownloadCenter center;
+              private final Map<DownloadCenter.Job, RowViews> rows = new HashMap<>();
+              private final Handler uiHandler = new Handler(Looper.getMainLooper());
+              private final Runnable refresher = new Runnable() {
+                  @Override
+                  public void run() {
+                      refreshPanel();
+                      if (panel.getVisibility() == View.VISIBLE) {
+                          uiHandler.postDelayed(this, 500);
+                      }
+                  }
+              };
+              private long lastBlockedToast;
+
+              @SuppressLint("SetJavaScriptEnabled")
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+
+                  root = new FrameLayout(this);
+                  root.setBackgroundColor(0xFF0F1115);
+
+                  webView = new WebView(this);
+                  root.addView(webView, new FrameLayout.LayoutParams(
+                          ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+                  progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+                  progressBar.setMax(100);
+                  progressBar.setVisibility(View.GONE);
+                  root.addView(progressBar, new FrameLayout.LayoutParams(
+                          ViewGroup.LayoutParams.MATCH_PARENT, dp(3), Gravity.TOP));
+
+                  buttonBar = new LinearLayout(this);
+                  buttonBar.setOrientation(LinearLayout.VERTICAL);
+                  buttonBar.setGravity(Gravity.END);
+
+                  listButton = makeButton("Downloads", 0xFF2E3340);
+                  listButton.setVisibility(View.GONE);
+                  listButton.setOnClickListener(v -> showPanel());
+                  LinearLayout.LayoutParams listParams = new LinearLayout.LayoutParams(
+                          ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  listParams.topMargin = dp(8);
+                  buttonBar.addView(listButton, listParams);
+
+                  downloadButton = makeButton("\u2193 Download", 0xFF7C5CFF);
+                  downloadButton.setVisibility(View.GONE);
+                  downloadButton.setOnClickListener(v -> onDownloadButtonClicked());
+                  LinearLayout.LayoutParams dlParams = new LinearLayout.LayoutParams(
+                          ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  dlParams.topMargin = dp(8);
+                  buttonBar.addView(downloadButton, dlParams);
+
+                  FrameLayout.LayoutParams barParams = new FrameLayout.LayoutParams(
+                          ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                          Gravity.BOTTOM | Gravity.END);
+                  barParams.setMargins(0, 0, dp(16), dp(24));
+                  root.addView(buttonBar, barParams);
+
+                  buildPanel();
+                  center = new DownloadCenter(this, cookieProvider, this::updateDownloadButton);
+
+                  setContentView(root);
+
+                  WebSettings s = webView.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  s.setDatabaseEnabled(true);
+                  s.setMediaPlaybackRequiresUserGesture(false);
+                  s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+                  s.setUseWideViewPort(true);
+                  s.setSupportMultipleWindows(true);
+                  s.setJavaScriptCanOpenWindowsAutomatically(false);
+                  // Some sites and video players treat the "; wv" WebView marker differently, so drop it.
+                  s.setUserAgentString(s.getUserAgentString().replace("; wv", ""));
+
+                  CookieManager cookies = CookieManager.getInstance();
+                  cookies.setAcceptCookie(true);
+                  cookies.setAcceptThirdPartyCookies(webView, true);
+
+                  webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) ->
+                          startDownload(url, userAgent, contentDisposition, mimeType));
+
+                  webView.setWebViewClient(new WebViewClient() {
+                      @Override
+                      public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                          if (!request.isForMainFrame()) {
+                              return false;
+                          }
+                          Uri uri = request.getUrl();
+                          String scheme = uri.getScheme();
+                          if ("http".equals(scheme) || "https".equals(scheme)) {
+                              if (looksLikeDownload(uri)) {
+                                  startDownload(uri.toString(), view.getSettings().getUserAgentString(), null, null);
+                                  return true;
+                              }
+                              if (isAllowedHost(uri.getHost())) {
+                                  return false;
+                              }
+                              // Ads, pop-ups and redirects to other sites are blocked.
+                              notifyBlocked(uri);
+                              return true;
+                          }
+                          if ("blob".equals(scheme) || "data".equals(scheme)
+                                  || "about".equals(scheme) || "javascript".equals(scheme)) {
+                              return false;
+                          }
+                          // Non-web links such as mailto: or app links open in the matching app.
+                          openExternally(uri);
+                          return true;
+                      }
+
+                      @Override
+                      public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                          // Runs on a background thread. Only takes note of video addresses; never changes a request.
+                          Uri uri = request.getUrl();
+                          if (isBlockedHost(uri.getHost())) {
+                              return new WebResourceResponse("text/plain", "UTF-8",
+                                      new java.io.ByteArrayInputStream(new byte[0]));
+                          }
+                          String path = uri.getPath();
+                          if (path != null) {
+                              String lower = path.toLowerCase(Locale.ROOT);
+                              boolean stream = lower.contains(".m3u8");
+                              boolean file = lower.endsWith(".mp4") || lower.endsWith(".mkv") || lower.endsWith(".webm");
+                              if (stream || file) {
+                                  noteMedia(uri.toString(), stream, request.getRequestHeaders());
+                              }
+                          }
+                          return null;
+                      }
+
+                      @Override
+                      public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                          progressBar.setVisibility(View.VISIBLE);
+                          synchronized (detected) {
+                              detected.clear();
+                          }
+                          updateDownloadButton();
+                      }
+
+                      @Override
+                      public void onPageFinished(WebView view, String url) {
+                          progressBar.setVisibility(View.GONE);
+                          CookieManager.getInstance().flush();
+                      }
+
+                      @Override
+                      public void onReceivedError(WebView view, WebResourceRequest request,
+                                                  WebResourceError error) {
+                          if (request.isForMainFrame()) {
+                              view.loadDataWithBaseURL(null, ERROR_HTML, "text/html", "UTF-8", null);
+                          }
+                      }
+                  });
+
+                  webView.setWebChromeClient(new WebChromeClient() {
+                      @Override
+                      public void onProgressChanged(WebView view, int newProgress) {
+                          progressBar.setProgress(newProgress);
+                      }
+
+                      @Override
+                      public void onShowCustomView(View view, CustomViewCallback callback) {
+                          if (customView != null) {
+                              callback.onCustomViewHidden();
+                              return;
+                          }
+                          customView = view;
+                          customViewCallback = callback;
+                          webView.setVisibility(View.GONE);
+                          root.addView(view, new FrameLayout.LayoutParams(
+                                  ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                          buttonBar.setVisibility(View.GONE);
+                          enterImmersive();
+                          setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                      }
+
+                      @Override
+                      public void onHideCustomView() {
+                          hideCustomView();
+                      }
+
+                      @Override
+                      public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture,
+                                                    Message resultMsg) {
+                          if (!isUserGesture) {
+                              return false; // pop-ups that open without a tap are blocked
+                          }
+                          final WebView popup = new WebView(MainActivity.this);
+                          final boolean[] handled = {false};
+                          popup.setWebViewClient(new WebViewClient() {
+                              @Override
+                              public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest request) {
+                                  handlePopupUrl(request.getUrl(), handled, v);
+                                  return true;
+                              }
+
+                              @Override
+                              public void onPageStarted(WebView v, String url, Bitmap favicon) {
+                                  if (url != null && !"about:blank".equals(url)) {
+                                      handlePopupUrl(Uri.parse(url), handled, v);
+                                  }
+                              }
+                          });
+                          WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                          transport.setWebView(popup);
+                          resultMsg.sendToTarget();
+                          return true;
+                      }
+                  });
+
+                  if (savedInstanceState != null) {
+                      webView.restoreState(savedInstanceState);
+                      loadBlocklist(() -> { });
+                  } else {
+                      loadBlocklist(() -> webView.loadUrl(START_URL));
+                  }
+              }
+
+              // ------------------------------------------------------------------ site rules
+
+              // Brave-style blocking: ad and tracker domains come from a filter list bundled at build time
+              // (assets/blocklist.txt). Requests to a listed domain, or any of its subdomains, are dropped.
+              private volatile java.util.Set<String> blocklist = java.util.Collections.emptySet();
+
+              private void loadBlocklist(final Runnable then) {
+                  new Thread(() -> {
+                      java.util.HashSet<String> set = new java.util.HashSet<>(300000);
+                      try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.InputStreamReader(
+                              getAssets().open("blocklist.txt"), java.nio.charset.StandardCharsets.UTF_8))) {
+                          String line;
+                          while ((line = r.readLine()) != null) {
+                              line = line.trim().toLowerCase(Locale.ROOT);
+                              if (!line.isEmpty() && !line.startsWith("#")) {
+                                  set.add(line);
+                              }
+                          }
+                      } catch (IOException ignored) {
+                          // No list available: nothing extra is blocked.
+                      }
+                      blocklist = set;
+                      runOnUiThread(then);
+                  }, "blocklist").start();
+              }
+
+              private boolean isBlockedHost(String host) {
+                  if (host == null || isAllowedHost(host)) {
+                      return false;
+                  }
+                  java.util.Set<String> set = blocklist;
+                  String h = host.toLowerCase(Locale.ROOT);
+                  while (true) {
+                      if (set.contains(h)) {
+                          return true;
+                      }
+                      int dot = h.indexOf('.');
+                      if (dot < 0 || h.indexOf('.', dot + 1) < 0) {
+                          return false;
+                      }
+                      h = h.substring(dot + 1);
+                  }
+              }
+
+              private boolean isAllowedHost(String host) {
+                  if (host == null) {
+                      return false;
+                  }
+                  for (String allowed : ALLOWED_HOSTS) {
+                      if (host.equals(allowed) || host.endsWith("." + allowed)) {
+                          return true;
+                      }
+                  }
+                  return false;
+              }
+
+              private void handlePopupUrl(Uri uri, boolean[] handled, WebView popup) {
+                  if (handled[0] || uri == null) {
+                      return;
+                  }
+                  handled[0] = true;
+                  popup.stopLoading();
+                  new Handler(Looper.getMainLooper()).post(popup::destroy);
+                  String scheme = uri.getScheme();
+                  if (("http".equals(scheme) || "https".equals(scheme)) && isAllowedHost(uri.getHost())) {
+                      webView.loadUrl(uri.toString());
+                  } else {
+                      notifyBlocked(uri);
+                  }
+              }
+
+              private void notifyBlocked(Uri uri) {
+                  long now = System.currentTimeMillis();
+                  if (now - lastBlockedToast > 2500) {
+                      lastBlockedToast = now;
+                      Toast.makeText(this, "Blocked: " + uri.getHost(), Toast.LENGTH_SHORT).show();
+                  }
+              }
+
+              private boolean looksLikeDownload(Uri uri) {
+                  String path = uri.getPath();
+                  if (path == null) {
+                      return false;
+                  }
+                  String lower = path.toLowerCase(Locale.ROOT);
+                  for (String ext : DOWNLOAD_EXTENSIONS) {
+                      if (lower.endsWith(ext)) {
+                          return true;
+                      }
+                  }
+                  return false;
+              }
+
+              // ------------------------------------------------------------------ video detection and button
+
+              private void noteMedia(String url, boolean stream, Map<String, String> requestHeaders) {
+                  Map<String, String> copy = new HashMap<>();
+                  if (requestHeaders != null) {
+                      copy.putAll(requestHeaders);
+                  }
+                  synchronized (detected) {
+                      for (Media m : detected) {
+                          if (m.url.equals(url)) {
+                              return;
+                          }
+                      }
+                      detected.add(new Media(url, stream, copy));
+                      while (detected.size() > 20) {
+                          detected.remove(0);
+                      }
+                  }
+                  runOnUiThread(this::updateDownloadButton);
+              }
+
+              private TextView makeButton(String text, int color) {
+                  TextView t = new TextView(this);
+                  t.setText(text);
+                  t.setTextColor(0xFFFFFFFF);
+                  t.setTextSize(14);
+                  t.setPadding(dp(16), dp(10), dp(16), dp(10));
+                  GradientDrawable bg = new GradientDrawable();
+                  bg.setColor(color);
+                  bg.setCornerRadius(dp(24));
+                  t.setBackground(bg);
+                  t.setElevation(dp(6));
+                  return t;
+              }
+
+              private void updateDownloadButton() {
+                  boolean any;
+                  synchronized (detected) {
+                      any = !detected.isEmpty();
+                  }
+                  downloadButton.setVisibility(any ? View.VISIBLE : View.GONE);
+                  int active = center.activeCount();
+                  int all = center.jobs().size();
+                  listButton.setText(active > 0 ? "Downloads (" + active + " running)" : "Downloads (" + all + ")");
+                  listButton.setVisibility(all > 0 ? View.VISIBLE : View.GONE);
+                  if (active > 0) {
+                      getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                  } else {
+                      getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                  }
+              }
+
+              /** One choice in the Download list: a quality of a stream, or a plain video file. */
+              private static final class Entry {
+                  String label;
+                  Media media;
+                  HlsDownloader.MediaPlaylist playlist; // null for a plain file
+                  int height;
+              }
+
+              private void onDownloadButtonClicked() {
+                  final List<Media> items;
+                  synchronized (detected) {
+                      items = new ArrayList<>(detected);
+                  }
+                  if (items.isEmpty()) {
+                      Toast.makeText(this, "No video found yet. Start playing the video first.", Toast.LENGTH_LONG).show();
+                      return;
+                  }
+                  Collections.reverse(items); // newest first
+                  final List<Media> prepared = new ArrayList<>();
+                  for (Media m : items) {
+                      prepared.add(new Media(m.url, m.stream, enrichedHeaders(m.headers, null, null)));
+                  }
+                  Toast.makeText(this, "Checking qualities...", Toast.LENGTH_SHORT).show();
+                  resolveBaseName(base -> new Thread(() -> {
+                      final List<Entry> entries = buildEntries(prepared, base);
+                      runOnUiThread(() -> showEntries(entries));
+                  }, "quality-scan").start());
+              }
+
+              private List<Entry> buildEntries(List<Media> items, String base) {
+                  final List<Entry> out = new ArrayList<>();
+                  List<Object[]> loaded = new ArrayList<>(); // {Media, Parsed}
+                  java.util.Set<String> variantUrls = new java.util.HashSet<>();
+                  for (Media m : items) {
+                      if (!m.stream) {
+                          Entry e = new Entry();
+                          e.media = m;
+                          String ext = extensionOf(m.url);
+                          long size = fileSize(m);
+                          e.label = base + " - " + (size > 0 ? formatBytes(size) + " - " : "")
+                                  + ext.substring(1).toUpperCase(Locale.ROOT);
+                          e.height = 1;
+                          out.add(e);
+                          continue;
+                      }
+                      try {
+                          HlsDownloader.Parsed p = HlsDownloader.load(m.url, m.headers, cookieProvider);
+                          loaded.add(new Object[]{m, p});
+                          if (p.variants != null) {
+                              for (HlsDownloader.Variant v : p.variants) {
+                                  variantUrls.add(v.url);
+                              }
+                          }
+                      } catch (Exception ignored) {
+                          // This address could not be read; skip it.
+                      }
+                  }
+                  java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(4);
+                  try {
+                      List<java.util.concurrent.Callable<Entry>> jobs = new ArrayList<>();
+                      for (Object[] pair : loaded) {
+                          final Media m = (Media) pair[0];
+                          final HlsDownloader.Parsed p = (HlsDownloader.Parsed) pair[1];
+                          final String baseName = base;
+                          if (p.variants != null) {
+                              for (final HlsDownloader.Variant v : p.variants) {
+                                  jobs.add(() -> variantEntry(m, v, baseName));
+                              }
+                          } else if (p.media != null && !variantUrls.contains(m.url)) {
+                              final HlsDownloader.MediaPlaylist mp = p.media;
+                              jobs.add(() -> {
+                                  Entry e = new Entry();
+                                  e.media = new Media(m.url, true, m.headers);
+                                  e.media.baseName = baseName;
+                                  e.playlist = mp;
+                                  e.label = baseName + " - Stream - " + formatFormat(mp);
+                                  return e;
+                              });
+                          }
+                      }
+                      for (java.util.concurrent.Future<Entry> f : pool.invokeAll(jobs)) {
+                          try {
+                              Entry e = f.get();
+                              if (e != null) {
+                                  out.add(e);
+                              }
+                          } catch (Exception ignored) {
+                              // A quality that cannot be read is left out.
+                          }
+                      }
+                  } catch (InterruptedException e) {
+                      Thread.currentThread().interrupt();
+                  } finally {
+                      pool.shutdownNow();
+                  }
+                  Collections.sort(out, (x, y) -> Integer.compare(y.height, x.height));
+                  return out;
+              }
+
+              private Entry variantEntry(Media m, HlsDownloader.Variant v, String base) {
+                  try {
+                      HlsDownloader.Parsed p = HlsDownloader.load(v.url, m.headers, cookieProvider);
+                      if (p.media == null) {
+                          return null;
+                      }
+                      int height = 0;
+                      String quality = "Unknown quality";
+                      if (v.resolution != null && v.resolution.contains("x")) {
+                          try {
+                              height = Integer.parseInt(v.resolution.substring(v.resolution.indexOf('x') + 1).trim());
+                              quality = height + "p";
+                          } catch (NumberFormatException ignored) {
+                              // Keep "Unknown quality".
+                          }
+                      }
+                      String size = "";
+                      if (v.bandwidth > 0 && p.media.totalSeconds > 0) {
+                          size = formatBytes(v.bandwidth * p.media.totalSeconds / 8.0) + " - ";
+                      }
+                      Entry e = new Entry();
+                      e.media = new Media(v.url, true, m.headers);
+                      e.media.baseName = base + " - " + quality;
+                      e.playlist = p.media;
+                      e.height = height;
+                      e.label = base + " - " + quality + " - " + size + formatFormat(p.media);
+                      return e;
+                  } catch (Exception ex) {
+                      return null;
+                  }
+              }
+
+              private static String formatFormat(HlsDownloader.MediaPlaylist mp) {
+                  return mp.initUrl != null ? "MP4" : "TS";
+              }
+
+              private long fileSize(Media m) {
+                  try {
+                      java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(m.url).openConnection();
+                      c.setRequestMethod("HEAD");
+                      c.setConnectTimeout(8000);
+                      c.setReadTimeout(8000);
+                      for (Map.Entry<String, String> h : m.headers.entrySet()) {
+                          String k = h.getKey();
+                          if ("User-Agent".equalsIgnoreCase(k) || "Referer".equalsIgnoreCase(k) || "Origin".equalsIgnoreCase(k)) {
+                              c.setRequestProperty(k, h.getValue());
+                          }
+                      }
+                      long n = c.getContentLengthLong();
+                      c.disconnect();
+                      return n;
+                  } catch (Exception e) {
+                      return -1;
+                  }
+              }
+
+              private void showEntries(final List<Entry> entries) {
+                  if (entries.isEmpty()) {
+                      toastLong("Could not read the video. Play it for a few seconds, then try again.");
+                      return;
+                  }
+                  String[] labels = new String[entries.size()];
+                  for (int i = 0; i < labels.length; i++) {
+                      labels[i] = entries.get(i).label;
+                  }
+                  new AlertDialog.Builder(this)
+                          .setTitle("Choose video to save")
+                          .setItems(labels, (dialog, which) -> {
+                              Entry e = entries.get(which);
+                              if (e.playlist != null) {
+                                  beginStreamDownload(e.media, e.playlist);
+                              } else if (canWrite()) {
+                                  String name = safeFileName(e.media.baseName + extensionOf(e.media.url));
+                                  center.addFile(name, mimeFor(name, null), e.media.url, e.media.headers);
+                                  addedToast(name);
+                              }
+                          })
+                          .show();
+              }
+
+              private interface NameCallback {
+                  void got(String baseName);
+              }
+
+              /** Works out "Series name - Episode NN" from the page, then calls back on the UI thread. */
+              private void resolveBaseName(final NameCallback callback) {
+                  final String pageUrl = webView.getUrl() != null ? webView.getUrl() : "";
+                  final String pageTitle = webView.getTitle() != null ? webView.getTitle() : "";
+                  final boolean[] called = {false};
+                  try {
+                      webView.evaluateJavascript(
+                              "(function(){var m=document.querySelector('meta[property=\"og:title\"]');"
+                                      + "var h=document.querySelector('h1');"
+                                      + "return JSON.stringify({og:m?m.content:'',h1:h?h.innerText:'',t:document.title});})()",
+                              value -> {
+                                  if (called[0]) {
+                                      return;
+                                  }
+                                  called[0] = true;
+                                  String og = "";
+                                  String h1 = "";
+                                  String t = pageTitle;
+                                  try {
+                                      Object inner = new JSONTokener(value).nextValue();
+                                      JSONObject o = new JSONObject(String.valueOf(inner));
+                                      og = o.optString("og", "");
+                                      h1 = o.optString("h1", "");
+                                      t = o.optString("t", pageTitle);
+                                  } catch (Exception ignored) {
+                                      // Fall back to the page title only.
+                                  }
+                                  callback.got(buildName(og, t, h1, pageUrl));
+                              });
+                  } catch (Exception e) {
+                      called[0] = true;
+                      callback.got(buildName("", pageTitle, "", pageUrl));
+                  }
+              }
+
+              private static final Pattern EP_TEXT =
+                      Pattern.compile("(?i)\\b(?:episode|ep)\\.?\\s*#?0*(\\d{1,4})\\b");
+              private static final Pattern EP_URL =
+                      Pattern.compile("(?i)[/?&#-](?:ep|episode)[-_/=]0*(\\d{1,4})\\b");
+              private static final Pattern JUNK = Pattern.compile(
+                      "(?i)\\b(miruro(\\.\\w+)?|english\\s+(sub|dub)(bed)?|subbed|dubbed|watch|online|for free|free|hd)\\b");
+
+              static String buildName(String og, String docTitle, String h1, String url) {
+                  String[] candidates = {og, docTitle, h1};
+                  String episode = null;
+                  Matcher um = EP_URL.matcher(url);
+                  if (um.find()) {
+                      episode = um.group(1);
+                  }
+                  if (episode == null) {
+                      try {
+                          String q = Uri.parse(url).getQueryParameter("ep");
+                          if (q == null) {
+                              q = Uri.parse(url).getQueryParameter("episode");
+                          }
+                          if (q != null && q.matches("\\d{1,4}")) {
+                              episode = String.valueOf(Integer.parseInt(q));
+                          }
+                      } catch (Exception ignored) {
+                          // Not a normal address; try the text instead.
+                      }
+                  }
+                  String series = "";
+                  for (String c : candidates) {
+                      if (c == null) {
+                          continue;
+                      }
+                      Matcher m = EP_TEXT.matcher(c);
+                      String head = c;
+                      if (m.find()) {
+                          if (episode == null) {
+                              episode = m.group(1);
+                          }
+                          head = c.substring(0, m.start());
+                      } else {
+                          int cut = firstSeparator(c);
+                          if (cut > 0) {
+                              head = c.substring(0, cut);
+                          }
+                      }
+                      String cleaned = cleanSeries(head);
+                      if (!cleaned.isEmpty() && series.isEmpty()) {
+                          series = cleaned;
+                      }
+                  }
+                  if (series.isEmpty()) {
+                      series = "video";
+                  }
+                  if (episode != null) {
+                      int n;
+                      try {
+                          n = Integer.parseInt(episode.replaceFirst("^0+(?=\\d)", ""));
+                      } catch (NumberFormatException e) {
+                          n = 0;
+                      }
+                      return series + " - Episode " + (n < 10 ? "0" + n : String.valueOf(n));
+                  }
+                  return series;
+              }
+
+              private static int firstSeparator(String s) {
+                  int best = -1;
+                  for (String sep : new String[]{" | ", " - ", " \u2013 ", " \u2014 "}) {
+                      int i = s.indexOf(sep);
+                      if (i > 0 && (best < 0 || i < best)) {
+                          best = i;
+                      }
+                  }
+                  return best;
+              }
+
+              private static String cleanSeries(String s) {
+                  String r = JUNK.matcher(s).replaceAll(" ");
+                  r = r.replaceAll("[|:\\u2013\\u2014\\-]+\\s*$", " ").replaceAll("^\\s*[|:\\u2013\\u2014\\-]+", " ");
+                  r = r.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", " ").replaceAll("\\s+", " ").trim();
+                  r = r.replaceAll("^[\\s\\-\\u2013\\u2014]+|[\\s\\-\\u2013\\u2014,]+$", "");
+                  if (r.length() > 80) {
+                      r = r.substring(0, 80).trim();
+                  }
+                  return r;
+              }
+
+              private static String extensionOf(String url) {
+                  String path = Uri.parse(url).getPath();
+                  if (path != null) {
+                      int dot = path.lastIndexOf('.');
+                      if (dot >= 0 && path.length() - dot <= 6) {
+                          return path.substring(dot).toLowerCase(Locale.ROOT);
+                      }
+                  }
+                  return ".mp4";
+              }
+
+              private static String headerIgnoreCase(Map<String, String> headers, String name) {
+                  for (Map.Entry<String, String> e : headers.entrySet()) {
+                      if (e.getKey() != null && e.getKey().equalsIgnoreCase(name)) {
+                          return e.getValue();
+                      }
+                  }
+                  return null;
+              }
+
+              private void toastLong(String message) {
+                  Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+              }
+
+              // ------------------------------------------------------------------ saving a chosen video
+
+              private static String mimeFor(String name, String given) {
+                  String lower = name.toLowerCase(Locale.ROOT);
+                  if (lower.endsWith(".mp4") || lower.endsWith(".m4v")) {
+                      return "video/mp4";
+                  }
+                  if (lower.endsWith(".webm")) {
+                      return "video/webm";
+                  }
+                  if (lower.endsWith(".mkv")) {
+                      return "video/x-matroska";
+                  }
+                  if (lower.endsWith(".ts")) {
+                      return "video/mp2t";
+                  }
+                  if (given != null && !given.isEmpty()) {
+                      return given;
+                  }
+                  return "application/octet-stream";
+              }
+
+              private static String safeFileName(String name) {
+                  String n = name.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "_").trim();
+                  return n.isEmpty() ? "download" : n;
+              }
+
+              /** Adds the page address and browser name the video server may expect. */
+              private Map<String, String> enrichedHeaders(Map<String, String> original, String userAgent,
+                                                          String referer) {
+                  Map<String, String> h = new HashMap<>(original);
+                  if (headerIgnoreCase(h, "User-Agent") == null) {
+                      h.put("User-Agent", userAgent != null ? userAgent : webView.getSettings().getUserAgentString());
+                  }
+                  if (headerIgnoreCase(h, "Referer") == null) {
+                      String ref = referer != null ? referer : webView.getUrl();
+                      if (ref != null) {
+                          h.put("Referer", ref);
+                      }
+                  }
+                  return h;
+              }
+
+              private void startMedia(Media m) {
+                  final Media prepared = new Media(m.url, m.stream, enrichedHeaders(m.headers, null, null));
+                  resolveBaseName(base -> {
+                      prepared.baseName = base;
+                      if (!prepared.stream) {
+                          if (!canWrite()) {
+                              return;
+                          }
+                          String name = safeFileName(base + extensionOf(prepared.url));
+                          center.addFile(name, mimeFor(name, null), prepared.url, prepared.headers);
+                          addedToast(name);
+                          return;
+                      }
+                      Toast.makeText(this, "Reading stream...", Toast.LENGTH_SHORT).show();
+                      loadPlaylist(prepared, prepared.url);
+                  });
+              }
+
+              private void addedToast(String name) {
+                  updateDownloadButton();
+                  toastLong("Downloading " + name + ". Tap Downloads to see progress.");
+              }
+
+              /** Reads a playlist in the background, then continues with quality choice or download. */
+              private void loadPlaylist(final Media m, final String playlistUrl) {
+                  new Thread(() -> {
+                      try {
+                          final HlsDownloader.Parsed parsed = HlsDownloader.load(playlistUrl, m.headers, cookieProvider);
+                          runOnUiThread(() -> onPlaylistLoaded(m, parsed));
+                      } catch (Exception e) {
+                          final String message = e.getMessage();
+                          runOnUiThread(() -> toastLong("Could not read the stream: " + message));
+                      }
+                  }, "stream-read").start();
+              }
+
+              private void onPlaylistLoaded(final Media m, HlsDownloader.Parsed parsed) {
+                  if (parsed.media != null) {
+                      beginStreamDownload(m, parsed.media);
+                      return;
+                  }
+                  final List<HlsDownloader.Variant> variants = new ArrayList<>(parsed.variants);
+                  if (variants.isEmpty()) {
+                      toastLong("No video found in this stream");
+                      return;
+                  }
+                  Collections.sort(variants, (a, b) -> Long.compare(b.bandwidth, a.bandwidth));
+                  if (variants.size() == 1) {
+                      loadPlaylist(m, variants.get(0).url);
+                      return;
+                  }
+                  String[] labels = new String[variants.size()];
+                  for (int i = 0; i < labels.length; i++) {
+                      labels[i] = variantLabel(variants.get(i));
+                  }
+                  new AlertDialog.Builder(this)
+                          .setTitle("Choose quality")
+                          .setItems(labels, (dialog, which) -> loadPlaylist(m, variants.get(which).url))
+                          .show();
+              }
+
+              private static String variantLabel(HlsDownloader.Variant v) {
+                  String size = v.resolution != null ? v.resolution : "Unknown size";
+                  if (v.bandwidth > 0) {
+                      long mbPerMinute = Math.max(1, v.bandwidth * 60 / 8 / 1000000);
+                      return size + "  (about " + mbPerMinute + " MB per minute)";
+                  }
+                  return size;
+              }
+
+              private void beginStreamDownload(final Media m, final HlsDownloader.MediaPlaylist playlist) {
+                  if (playlist.segments.isEmpty()) {
+                      toastLong("No video parts found in this stream");
+                      return;
+                  }
+                  if (!canWrite()) {
+                      return;
+                  }
+                  boolean mp4 = playlist.initUrl != null;
+                  String name = safeFileName(m.baseName + (mp4 ? ".mp4" : ".ts"));
+                  center.addStream(name, mp4 ? "video/mp4" : "video/mp2t", playlist, m.headers);
+                  addedToast(name);
+              }
+
+              // ------------------------------------------------------------------ plain file downloads
+
+              private boolean canWrite() {
+                  if (center.hasCustomFolder()) {
+                      return true;
+                  }
+                  if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P
+                          && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                          != PackageManager.PERMISSION_GRANTED) {
+                      requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_STORAGE);
+                      toastLong("Allow storage access, then tap Download again");
+                      return false;
+                  }
+                  return true;
+              }
+
+              private void startDownload(String url, String userAgent, String contentDisposition,
+                                         String mimeType) {
+                  startDownload(url, userAgent, contentDisposition, mimeType, null, null);
+              }
+
+              private void startDownload(String url, String userAgent, String contentDisposition,
+                                         String mimeType, String referer, String fileName) {
+                  if (url == null || !(url.startsWith("http://") || url.startsWith("https://"))) {
+                      toastLong("This type of download is not supported yet");
+                      return;
+                  }
+                  if (!canWrite()) {
+                      return;
+                  }
+                  String name = safeFileName(fileName != null ? fileName
+                          : URLUtil.guessFileName(url, contentDisposition, mimeType));
+                  Map<String, String> headers = enrichedHeaders(new HashMap<String, String>(), userAgent, referer);
+                  center.addFile(name, mimeFor(name, mimeType), url, headers);
+                  addedToast(name);
+              }
+
+              @Override
+              public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+                  super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+                  boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                  if (requestCode == REQ_STORAGE && !granted) {
+                      toastLong("Storage permission is needed to save videos");
+                  }
+              }
+
+              // ------------------------------------------------------------------ downloads screen
+
+              private void buildPanel() {
+                  panel = new LinearLayout(this);
+                  panel.setOrientation(LinearLayout.VERTICAL);
+                  panel.setBackgroundColor(0xFF14161C);
+                  panel.setPadding(dp(16), dp(16), dp(16), dp(16));
+                  panel.setClickable(true); // keeps taps from reaching the web page underneath
+                  panel.setVisibility(View.GONE);
+
+                  LinearLayout header = new LinearLayout(this);
+                  header.setOrientation(LinearLayout.HORIZONTAL);
+                  header.setGravity(Gravity.CENTER_VERTICAL);
+                  TextView title = new TextView(this);
+                  title.setText("Downloads");
+                  title.setTextColor(0xFFFFFFFF);
+                  title.setTextSize(22);
+                  header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  TextView close = makeButton("Close", 0xFF2E3340);
+                  close.setOnClickListener(v -> hidePanel());
+                  header.addView(close);
+                  panel.addView(header);
+
+                  folderLabel = new TextView(this);
+                  folderLabel.setTextColor(0xFFB8BCC8);
+                  folderLabel.setTextSize(13);
+                  folderLabel.setPadding(0, dp(12), 0, 0);
+                  panel.addView(folderLabel);
+
+                  LinearLayout folderRow = new LinearLayout(this);
+                  folderRow.setOrientation(LinearLayout.HORIZONTAL);
+                  TextView choose = makeButton("Choose folder", 0xFF7C5CFF);
+                  choose.setOnClickListener(v -> chooseFolder());
+                  LinearLayout.LayoutParams chooseParams = new LinearLayout.LayoutParams(
+                          ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  chooseParams.rightMargin = dp(8);
+                  folderRow.addView(choose, chooseParams);
+                  TextView reset = makeButton("Use Downloads", 0xFF2E3340);
+                  reset.setOnClickListener(v -> {
+                      center.resetFolder();
+                      refreshPanel();
+                  });
+                  folderRow.addView(reset);
+                  LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                          ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  rowParams.topMargin = dp(8);
+                  rowParams.bottomMargin = dp(12);
+                  panel.addView(folderRow, rowParams);
+
+                  emptyLabel = new TextView(this);
+                  emptyLabel.setText("No downloads yet. Play a video and tap the Download button.");
+                  emptyLabel.setTextColor(0xFFB8BCC8);
+                  emptyLabel.setTextSize(14);
+                  panel.addView(emptyLabel);
+
+                  ScrollView scroll = new ScrollView(this);
+                  listBox = new LinearLayout(this);
+                  listBox.setOrientation(LinearLayout.VERTICAL);
+                  scroll.addView(listBox, new ViewGroup.LayoutParams(
+                          ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                  panel.addView(scroll, new LinearLayout.LayoutParams(
+                          ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+                  root.addView(panel, new FrameLayout.LayoutParams(
+                          ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+              }
+
+              private void showPanel() {
+                  panel.setVisibility(View.VISIBLE);
+                  panel.bringToFront();
+                  buttonBar.setVisibility(View.GONE);
+                  refreshPanel();
+                  uiHandler.removeCallbacks(refresher);
+                  uiHandler.postDelayed(refresher, 500);
+              }
+
+              private void hidePanel() {
+                  panel.setVisibility(View.GONE);
+                  buttonBar.setVisibility(View.VISIBLE);
+                  uiHandler.removeCallbacks(refresher);
+                  updateDownloadButton();
+              }
+
+              private RowViews addRow() {
+                  RowViews r = new RowViews();
+                  r.box = new LinearLayout(this);
+                  r.box.setOrientation(LinearLayout.VERTICAL);
+                  r.box.setPadding(dp(12), dp(12), dp(12), dp(12));
+                  GradientDrawable bg = new GradientDrawable();
+                  bg.setColor(0xFF1E2129);
+                  bg.setCornerRadius(dp(12));
+                  r.box.setBackground(bg);
+
+                  r.title = new TextView(this);
+                  r.title.setTextColor(0xFFFFFFFF);
+                  r.title.setTextSize(15);
+                  r.title.setMaxLines(2);
+                  r.title.setEllipsize(TextUtils.TruncateAt.END);
+                  r.box.addView(r.title);
+
+                  r.bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+                  r.bar.setMax(1000);
+                  LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(
+                          ViewGroup.LayoutParams.MATCH_PARENT, dp(8));
+                  barParams.topMargin = dp(8);
+                  r.box.addView(r.bar, barParams);
+
+                  r.info = new TextView(this);
+                  r.info.setTextColor(0xFFB8BCC8);
+                  r.info.setTextSize(13);
+                  LinearLayout.LayoutParams infoParams = new LinearLayout.LayoutParams(
+                          ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  infoParams.topMargin = dp(6);
+                  r.box.addView(r.info, infoParams);
+
+                  r.action = makeButton("Stop", 0xFFD64545);
+                  r.action.setElevation(0);
+                  LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(
+                          ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  actionParams.topMargin = dp(8);
+                  actionParams.gravity = Gravity.END;
+                  r.box.addView(r.action, actionParams);
+
+                  LinearLayout.LayoutParams boxParams = new LinearLayout.LayoutParams(
+                          ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  boxParams.bottomMargin = dp(10);
+                  listBox.addView(r.box, 0, boxParams); // newest on top
+                  return r;
+              }
+
+              private void refreshPanel() {
+                  List<DownloadCenter.Job> jobs = center.jobs();
+                  for (DownloadCenter.Job j : jobs) {
+                      if (!rows.containsKey(j)) {
+                          rows.put(j, addRow());
+                      }
+                  }
+                  Iterator<Map.Entry<DownloadCenter.Job, RowViews>> it = rows.entrySet().iterator();
+                  while (it.hasNext()) {
+                      Map.Entry<DownloadCenter.Job, RowViews> e = it.next();
+                      if (!jobs.contains(e.getKey())) {
+                          listBox.removeView(e.getValue().box);
+                          it.remove();
+                      }
+                  }
+                  for (DownloadCenter.Job j : jobs) {
+                      updateRow(j, rows.get(j));
+                  }
+                  folderLabel.setText("Saving to: " + center.folderLabel());
+                  emptyLabel.setVisibility(jobs.isEmpty() ? View.VISIBLE : View.GONE);
+              }
+
+              private void updateRow(final DownloadCenter.Job job, RowViews r) {
+                  r.title.setText(job.name);
+                  int state = job.state;
+                  long bytes = job.bytes.get();
+                  String info;
+                  if (state == DownloadCenter.RUNNING) {
+                      long now = SystemClock.elapsedRealtime();
+                      if (r.lastTime == 0) {
+                          r.lastTime = now;
+                          r.lastBytes = bytes;
+                      } else if (now - r.lastTime >= 1000) {
+                          r.speed = (bytes - r.lastBytes) * 1000.0 / (now - r.lastTime);
+                          r.lastBytes = bytes;
+                          r.lastTime = now;
+                      }
+                      int total = job.total;
+                      if (total > 0) {
+                          long done = job.done;
+                          r.bar.setIndeterminate(false);
+                          r.bar.setProgress((int) (done * 1000L / total));
+                          info = (done * 100L / total) + "%";
+                      } else {
+                          r.bar.setIndeterminate(true);
+                          info = "Starting";
+                      }
+                      info += " - " + formatBytes(bytes) + " - " + formatBytes(r.speed) + "/s";
+                      r.action.setText("Stop");
+                      r.action.setOnClickListener(v -> job.cancel.set(true));
+                  } else {
+                      r.bar.setIndeterminate(false);
+                      if (state == DownloadCenter.DONE) {
+                          r.bar.setProgress(1000);
+                          info = "Done - " + formatBytes(bytes) + " - saved in " + job.where;
+                      } else if (state == DownloadCenter.FAILED) {
+                          info = "Failed: " + job.message;
+                      } else {
+                          info = "Stopped";
+                      }
+                      r.action.setText("Remove");
+                      r.action.setOnClickListener(v -> {
+                          center.remove(job);
+                          refreshPanel();
+                          updateDownloadButton();
+                      });
+                  }
+                  r.info.setText(info);
+              }
+
+              private static String formatBytes(double b) {
+                  if (b < 1024) {
+                      return (long) b + " B";
+                  }
+                  double kb = b / 1024;
+                  if (kb < 1024) {
+                      return String.format(Locale.US, "%.0f KB", kb);
+                  }
+                  double mb = kb / 1024;
+                  if (mb < 1024) {
+                      return String.format(Locale.US, "%.1f MB", mb);
+                  }
+                  return String.format(Locale.US, "%.2f GB", mb / 1024);
+              }
+
+              @SuppressWarnings("deprecation")
+              private void chooseFolder() {
+                  Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                  i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                          | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                  try {
+                      startActivityForResult(i, REQ_FOLDER);
+                  } catch (ActivityNotFoundException e) {
+                      toastLong("This phone has no folder picker");
+                  }
+              }
+
+              @Override
+              @SuppressWarnings("deprecation")
+              protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+                  super.onActivityResult(requestCode, resultCode, data);
+                  if (requestCode == REQ_FOLDER && resultCode == RESULT_OK && data != null && data.getData() != null) {
+                      Uri uri = data.getData();
+                      try {
+                          getContentResolver().takePersistableUriPermission(uri,
+                                  Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                      } catch (Exception ignored) {
+                          // Some providers do not allow keeping access; it still works until the app closes.
+                      }
+                      center.setFolder(uri);
+                      refreshPanel();
+                      toastLong("New downloads will be saved to: " + center.folderLabel());
+                  }
+              }
+
+              private void openExternally(Uri uri) {
+                  try {
+                      startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                  } catch (ActivityNotFoundException ignored) {
+                      // No app can handle this link; do nothing.
+                  }
+              }
+
+              // ------------------------------------------------------------------ fullscreen video and lifecycle
+
+              private void hideCustomView() {
+                  if (customView == null) {
+                      return;
+                  }
+                  root.removeView(customView);
+                  customView = null;
+                  webView.setVisibility(View.VISIBLE);
+                  buttonBar.setVisibility(View.VISIBLE);
+                  exitImmersive();
+                  setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+                  if (customViewCallback != null) {
+                      customViewCallback.onCustomViewHidden();
+                      customViewCallback = null;
+                  }
+              }
+
+              @SuppressWarnings("deprecation")
+              private void enterImmersive() {
+                  getWindow().getDecorView().setSystemUiVisibility(
+                          View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                  | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                  | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                  | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                  | View.SYSTEM_UI_FLAG_FULLSCREEN
+                                  | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+              }
+
+              @SuppressWarnings("deprecation")
+              private void exitImmersive() {
+                  getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+              }
+
+              private int dp(int value) {
+                  return Math.round(value * getResources().getDisplayMetrics().density);
+              }
+
+              @Override
+              @SuppressWarnings("deprecation")
+              public void onBackPressed() {
+                  if (panel.getVisibility() == View.VISIBLE) {
+                      hidePanel();
+                  } else if (customView != null) {
+                      hideCustomView();
+                  } else if (webView.canGoBack()) {
+                      webView.goBack();
+                  } else if (center.activeCount() > 0) {
+                      new AlertDialog.Builder(this)
+                              .setMessage("Downloads are still running. Leave and stop them?")
+                              .setPositiveButton("Stop and leave", (d, which) -> {
+                                  center.cancelAll();
+                                  finish();
+                              })
+                              .setNegativeButton("Stay", null)
+                              .show();
+                  } else {
+                      super.onBackPressed();
+                  }
+              }
+
+              @Override
+              protected void onSaveInstanceState(Bundle outState) {
+                  super.onSaveInstanceState(outState);
+                  webView.saveState(outState);
+              }
+
+              @Override
+              protected void onPause() {
+                  super.onPause();
+                  webView.onPause();
+              }
+
+              @Override
+              protected void onResume() {
+                  super.onResume();
+                  webView.onResume();
+              }
+
+              @Override
+              protected void onDestroy() {
+                  center.cancelAll();
+                  uiHandler.removeCallbacks(refresher);
+                  root.removeAllViews();
+                  webView.destroy();
+                  super.onDestroy();
+              }
+          }
+          EOF_FILE
+          cat > app/src/main/res/drawable/ic_launcher_foreground.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp"
+              android:height="108dp"
+              android:viewportWidth="108"
+              android:viewportHeight="108">
+              <!-- Purple circle -->
+              <path
+                  android:fillColor="#7C5CFF"
+                  android:pathData="M54,54m-26,0a26,26 0,1 1,52 0a26,26 0,1 1,-52 0" />
+              <!-- White play triangle -->
+              <path
+                  android:fillColor="#FFFFFF"
+                  android:pathData="M47,40L47,68L71,54Z" />
+          </vector>
+          EOF_FILE
+          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background" />
+              <foreground android:drawable="@drawable/ic_launcher_foreground" />
+          </adaptive-icon>
+          EOF_FILE
+          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background" />
+              <foreground android:drawable="@drawable/ic_launcher_foreground" />
+          </adaptive-icon>
+          EOF_FILE
+          cat > app/src/main/res/values/colors.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="app_background">#0F1115</color>
+              <color name="ic_launcher_background">#0F1115</color>
+          </resources>
+          EOF_FILE
+          cat > app/src/main/res/values/strings.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">Miruro</string>
+          </resources>
+          EOF_FILE
+          cat > app/src/main/res/values/themes.xml <<'EOF_FILE'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+                  <item name="android:windowBackground">@color/app_background</item>
+                  <item name="android:statusBarColor">@color/app_background</item>
+                  <item name="android:navigationBarColor">@color/app_background</item>
+              </style>
+          </resources>
+          EOF_FILE
+          cat > build.gradle <<'EOF_FILE'
+          plugins {
+              id 'com.android.application' version '8.5.2' apply false
+          }
+          EOF_FILE
+          cat > gradle.properties <<'EOF_FILE'
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=false
+          android.nonTransitiveRClass=true
+          EOF_FILE
+          cat > settings.gradle <<'EOF_FILE'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "MiruroApp"
+          include(":app")
+          EOF_FILE
+          base64 -d app/signing.b64 > app/signing.jks
+
+      - name: Download ad and tracker block lists
+        run: |
+          mkdir -p proj/app/src/main/assets
+          cd proj/app/src/main/assets
+          printf '%s\n' werefilledwit.org > raw.txt
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts | awk '($1=="0.0.0.0"||$1=="127.0.0.1")&&$2!~/^(localhost|0\.0\.0\.0|local|broadcasthost)/{print $2}' >> raw.txt || true
+          curl -fsSL --retry 3 "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=nohtml&showintro=0" >> raw.txt || true
+          tr -d '\r' < raw.txt | tr 'A-Z' 'a-z' | sort -u > blocklist.txt
+          rm raw.txt
+          wc -l blocklist.txt
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+          cache-disabled: true
+
+      - name: Build debug APK
+        working-directory: proj
+        run: gradle assembleDebug --no-daemon
+
+      - name: Name the APK
+        run: cp proj/app/build/outputs/apk/debug/app-debug.apk MiruroApp.apk
+
+      - name: Keep a copy as a build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MiruroApp-apk
+          path: MiruroApp.apk
+
+      - name: Publish to Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${{ github.run_id }}" MiruroApp.apk \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "Miruro app build ${{ github.run_number }}" \
+            --notes "Download MiruroApp.apk below and install it on your Android phone."
